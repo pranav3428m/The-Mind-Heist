@@ -81,18 +81,18 @@ class Game:
         self.menu = Menu()
         self.hud = HUD()
         self.level = Level()
-        self.player: Player | None = None
-        self.abilities: AbilitySystem | None = None
+        self.player = None
+        self.abilities = None
 
         self.state = STATE_MENU
-        self._damage_timer: dict = {}  # enemy_id -> cooldown timer
+        self._damage_timer = {}  # enemy_id -> cooldown timer
         self._score_timer = 0.0        # for time-based score
 
     # ------------------------------------------------------------------
     # Game flow
     # ------------------------------------------------------------------
 
-    def start_game(self) -> None:
+    def start_game(self):
         """Begin a fresh game from level 1."""
         self.level.load_level(1)
         spawn = self.level.get_player_spawn()
@@ -104,7 +104,7 @@ class Game:
         self.state = STATE_PLAYING
         self.hud.add_log(f"Level 1: {self.level.config['name']}")
 
-    def advance_level(self) -> None:
+    def advance_level(self):
         """Proceed to the next level, or end the game if none remain."""
         advanced = self.level.advance_level()
         if not advanced:
@@ -126,7 +126,7 @@ class Game:
     # Main loop
     # ------------------------------------------------------------------
 
-    def run(self) -> None:
+    def run(self):
         while True:
             dt = self.clock.tick(FPS) / 1000.0
 
@@ -144,7 +144,7 @@ class Game:
     # Event handling
     # ------------------------------------------------------------------
 
-    def _handle_event(self, event: pygame.event.Event) -> None:
+    def _handle_event(self, event):
         if self.state == STATE_MENU:
             action = self.menu.handle_event(event)
             if action == "start":
@@ -195,7 +195,7 @@ class Game:
     # Update
     # ------------------------------------------------------------------
 
-    def _update(self, dt: float) -> None:
+    def _update(self, dt):
         if self.state == STATE_MENU:
             self.menu.update(dt)
             return
@@ -238,7 +238,7 @@ class Game:
             pull_active=self.abilities.memory_pull_active,
         )
         if points:
-            total = self.level.calculate_score(points)
+            total = self.level.calculate_score(points * 10)
             self.player.add_score(total)
             self.hud.add_log(f"+{total} memory fragment(s) collected!")
 
@@ -279,7 +279,7 @@ class Game:
     # Draw
     # ------------------------------------------------------------------
 
-    def _draw(self) -> None:
+    def _draw(self):
         self.screen.fill(colors.dark_bg)
 
         if self.state == STATE_MENU:
@@ -329,7 +329,7 @@ class Game:
 # Entry point
 # ---------------------------------------------------------------------------
 
-def main() -> None:
+def main():
     game = Game()
     game.run()
 
