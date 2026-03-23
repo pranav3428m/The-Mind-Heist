@@ -23,16 +23,18 @@ from game.constants import (
     STATE_MENU, STATE_PLAYING, STATE_PAUSED,
     STATE_LEVEL_COMPLETE, STATE_GAME_OVER,
     ABILITY_PULSE_DASH, ABILITY_CLOAK, ABILITY_MEMORY_PULL, ABILITY_OVERCLOCK,
-    ENEMY_TYPE_CORRUPTION, SCORE_TIME_BONUS,
-    LEVEL_CONFIGS,
+    SCORE_TIME_BONUS, LEVEL_CONFIGS,
 )
 from game.player import Player
 from game.level import Level
 from game.abilities import AbilitySystem
-from game.enemy import ENEMY_TYPE_FIREWALL, ENEMY_TYPE_BOT
 from ui.menu import Menu
 from ui.hud import HUD
 from utils import colors
+
+# Game states for settings/puzzle modes
+STATE_SETTINGS = "SETTINGS"
+STATE_PUZZLE = "PUZZLE"
 
 
 # ---------------------------------------------------------------------------
@@ -85,8 +87,8 @@ class Game:
         self.abilities = None
 
         self.state = STATE_MENU
-        self._damage_timer = {}  # enemy_id -> cooldown timer
-        self._score_timer = 0.0        # for time-based score
+        self._damage_timer = {}
+        self._score_timer = 0.0
 
     # ------------------------------------------------------------------
     # Game flow
@@ -104,20 +106,35 @@ class Game:
         self.state = STATE_PLAYING
         self.hud.add_log(f"Level 1: {self.level.config['name']}")
 
+    def start_puzzle_mode(self):
+        """Start puzzle mode (similar to regular game)."""
+        self.level.load_level(1)
+        spawn = self.level.get_player_spawn()
+        self.player = Player(*spawn)
+        self.abilities = AbilitySystem(self.player)
+        self.hud = HUD()
+        self._damage_timer.clear()
+        self._score_timer = 0.0
+        self.state = STATE_PUZZLE
+        self.hud.add_log("PUZZLE MODE - Solve the neural networks!")
+
+    def show_settings(self):
+        """Show settings screen."""
+        self.state = STATE_SETTINGS
+
     def advance_level(self):
         """Proceed to the next level, or end the game if none remain."""
         advanced = self.level.advance_level()
         if not advanced:
-            # All levels complete – show game over / win screen
             self.state = STATE_GAME_OVER
             return
         spawn = self.level.get_player_spawn()
         self.player.x, self.player.y = spawn
-        self.player.heal(30)          # small heal between levels
+        self.player.heal(30)
         self.abilities = AbilitySystem(self.player)
         self._damage_timer.clear()
         self._score_timer = 0.0
-        self.state = STATE_PLAYING
+        self.state = STATE_PLAYING if self.state == STATE_PLAYING else STATE_PUZZLE
         self.hud.add_log(
             f"Level {self.level.current_level}: {self.level.config['name']}"
         )
@@ -150,6 +167,11 @@ class Game:
             if action == "start":
                 self.menu.on_start()
                 self.start_game()
+            elif action == "puzzle":
+                self.menu.on_start()
+                self.start_puzzle_mode()
+            elif action == "settings":
+                self.show_settings()
             elif action == "quit":
                 pygame.quit()
                 sys.exit()
@@ -157,13 +179,15 @@ class Game:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                if self.state == STATE_PLAYING:
+                if self.state == STATE_SETTINGS:
+                    self.state = STATE_MENU
+                elif self.state == STATE_PLAYING or self.state == STATE_PUZZLE:
                     self.state = STATE_PAUSED
                 elif self.state == STATE_PAUSED:
-                    self.state = STATE_PLAYING
+                    self.state = STATE_PLAYING if self.state == STATE_PLAYING else STATE_PUZZLE
                 return
 
-            if self.state == STATE_PLAYING and self.player and self.abilities:
+            if self.state in (STATE_PLAYING, STATE_PUZZLE) and self.player and self.abilities:
                 key_map = {
                     pygame.K_q: ABILITY_PULSE_DASH,
                     pygame.K_e: ABILITY_CLOAK,
@@ -178,7 +202,7 @@ class Game:
                     dy = (keys[pygame.K_s] or keys[pygame.K_DOWN]) - \
                          (keys[pygame.K_w] or keys[pygame.K_UP])
                     if dx == 0 and dy == 0:
-                        dy = -1  # default dash upward
+                        dy = -1
                     msg = self.abilities.activate_ability(ability_key, (dx, dy))
                     if msg:
                         self.hud.add_log(msg)
@@ -200,16 +224,17 @@ class Game:
             self.menu.update(dt)
             return
 
+        if self.state == STATE_SETTINGS:
+            return
+
         if self.state in (STATE_PAUSED, STATE_LEVEL_COMPLETE, STATE_GAME_OVER):
             return
 
-        if self.state != STATE_PLAYING:
+        if self.state not in (STATE_PLAYING, STATE_PUZZLE):
             return
 
-        # Apply time scale (Overclock)
         scaled_dt = dt * self.abilities.time_scale
 
-        # Player movement
         keys = pygame.key.get_pressed()
         dx = (keys[pygame.K_d] or keys[pygame.K_RIGHT]) - \
              (keys[pygame.K_a] or keys[pygame.K_LEFT])
@@ -218,13 +243,10 @@ class Game:
         self.player.move(float(dx), float(dy), scaled_dt,
                          SCREEN_WIDTH, SCREEN_HEIGHT)
 
-        # Energy regeneration
         self.player.update_energy_regen(scaled_dt)
 
-        # Ability cooldowns
-        self.abilities.update_cooldowns(dt)   # real time for cooldowns
+        self.abilities.update_cooldowns(dt)
 
-        # Time-based score
         self._score_timer += scaled_dt
         if self._score_timer >= 1.0:
             self.player.add_score(
@@ -232,7 +254,6 @@ class Game:
             )
             self._score_timer -= 1.0
 
-        # Memory collection
         points = self.level.collect_nearby_memories(
             self.player.x, self.player.y,
             pull_active=self.abilities.memory_pull_active,
@@ -242,7 +263,6 @@ class Game:
             self.player.add_score(total)
             self.hud.add_log(f"+{total} memory fragment(s) collected!")
 
-        # Enemy updates & damage
         player_rect = self.player.get_rect()
         for i, enemy in enumerate(self.level.enemies):
             enemy.update((self.player.x, self.player.y), scaled_dt)
@@ -250,7 +270,7 @@ class Game:
                 timer_key = id(enemy)
                 self._damage_timer.setdefault(timer_key, 0.0)
                 self._damage_timer[timer_key] += dt
-                interval = 1.0 if enemy.enemy_type == ENEMY_TYPE_CORRUPTION else 0.5
+                interval = 1.0 if enemy.enemy_type == "corruption" else 0.5
                 if self._damage_timer[timer_key] >= interval:
                     dmg = enemy.deal_damage()
                     self.player.take_damage(dmg)
@@ -259,14 +279,11 @@ class Game:
             else:
                 self._damage_timer[id(enemy)] = 0.0
 
-        # Level update
         self.level.update(scaled_dt, (self.player.x, self.player.y),
                           self.player.alive)
 
-        # HUD update
         self.hud.update(self.player.get_data())
 
-        # State transitions
         if not self.player.alive:
             self.state = STATE_GAME_OVER
         elif self.level.complete:
@@ -286,7 +303,17 @@ class Game:
             self.menu.draw(self.screen)
             return
 
-        # Playing / Paused / Level Complete / Game Over – draw level & HUD
+        if self.state == STATE_SETTINGS:
+            draw_overlay_text(self.screen, self.font_large, self.font_medium, [
+                ("SETTINGS", colors.neon_purple, True),
+                ("", colors.light_gray, False),
+                ("Difficulty: MEDIUM", colors.neon_blue, False),
+                ("Volume: ON", colors.neon_blue, False),
+                ("", colors.light_gray, False),
+                ("Press ESC to return", colors.light_gray, False),
+            ])
+            return
+
         if self.player and self.level and self.abilities:
             self.level.draw(self.screen)
             self.player.draw(self.screen)
