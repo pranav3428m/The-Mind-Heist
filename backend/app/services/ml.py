@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 
@@ -16,14 +16,14 @@ class ModelMetrics:
 
 class SignalModel:
     def __init__(self) -> None:
-        self.model = RandomForestRegressor(n_estimators=200, random_state=42)
+        self.model = RandomForestClassifier(n_estimators=200, random_state=42)
         self.metrics = ModelMetrics(accuracy=0.0, precision=0.0, recall=0.0)
 
     def train(self, features: np.ndarray, targets: np.ndarray) -> None:
-        self.model.fit(features, targets)
-        predictions = self.model.predict(features)
         y_true = (targets > 0).astype(int)
-        y_pred = (predictions > 0).astype(int)
+        self.model.fit(features, y_true)
+        predictions = self.model.predict(features)
+        y_pred = predictions.astype(int)
         if len(np.unique(y_true)) < 2:
             self.metrics = ModelMetrics(accuracy=0.0, precision=0.0, recall=0.0)
             return
@@ -34,4 +34,6 @@ class SignalModel:
         )
 
     def predict(self, features: np.ndarray) -> np.ndarray:
+        if hasattr(self.model, "predict_proba"):
+            return self.model.predict_proba(features)[:, 1]
         return self.model.predict(features)

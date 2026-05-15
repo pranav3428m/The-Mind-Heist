@@ -44,6 +44,18 @@ def _fallback_rsi(series: pd.Series, period: int = 14) -> float:
     return (100 - (100 / (1 + rs))).iloc[-1]
 
 
+def _rsi_series(series: pd.Series, period: int = 14) -> pd.Series:
+    delta = series.diff()
+    gain = delta.clip(lower=0).rolling(period).mean()
+    loss = -delta.clip(upper=0).rolling(period).mean()
+    rs = gain / loss.replace(0, np.nan)
+    return 100 - (100 / (1 + rs))
+
+
+def _last_value(value) -> float:
+    return float(value[-1]) if hasattr(value, "__iter__") else float(value)
+
+
 def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
     close = candles["close"]
     high = candles["high"]
@@ -65,7 +77,8 @@ def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
         adx = talib.ADX(high, low, close, timeperiod=14)[-1]
         candle_pattern = _detect_candlestick(talib, candles)
     else:
-        rsi = _fallback_rsi(close)
+        rsi_series = _rsi_series(close)
+        rsi = rsi_series.iloc[-1]
         macd_value = close.ewm(span=12).mean().iloc[-1] - close.ewm(span=26).mean().iloc[-1]
         macd_signal_value = pd.Series([macd_value]).ewm(span=9).mean().iloc[-1]
         ema_20 = close.ewm(span=20).mean().iloc[-1]
@@ -76,7 +89,9 @@ def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
         bb_upper = bb_middle + 2 * bb_std
         bb_lower = bb_middle - 2 * bb_std
         atr = (high - low).rolling(14).mean().iloc[-1]
-        stoch_rsi = ((rsi - 30) / 40) * 100
+        rsi_min = rsi_series.rolling(14).min().iloc[-1]
+        rsi_max = rsi_series.rolling(14).max().iloc[-1]
+        stoch_rsi = ((rsi - rsi_min) / max(rsi_max - rsi_min, 1e-6)) * 100
         obv = (np.sign(close.diff().fillna(0)) * volume).cumsum().iloc[-1]
         adx = 20.0
         candle_pattern = None
@@ -100,9 +115,9 @@ def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
         ema_20=float(ema_20),
         ema_50=float(ema_50),
         ema_200=float(ema_200),
-        bb_upper=float(bb_upper[-1] if hasattr(bb_upper, "__iter__") else bb_upper),
-        bb_middle=float(bb_middle[-1] if hasattr(bb_middle, "__iter__") else bb_middle),
-        bb_lower=float(bb_lower[-1] if hasattr(bb_lower, "__iter__") else bb_lower),
+        bb_upper=_last_value(bb_upper),
+        bb_middle=_last_value(bb_middle),
+        bb_lower=_last_value(bb_lower),
         vwap=float(vwap),
         fib_38=float(fib_38),
         fib_50=float(fib_50),

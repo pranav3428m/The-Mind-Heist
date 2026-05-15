@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     max_position_risk_pct: float = 0.02
 
     default_universe: str = "NIFTY50"
+    holding_duration_days_min: int = 5
+    holding_duration_days_max: int = 20
 
 
 settings = Settings()

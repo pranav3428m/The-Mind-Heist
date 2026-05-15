@@ -75,6 +75,9 @@ def generate_signal(
         reasons.append("Sentiment lacks confirmation")
 
     reasoning = "; ".join(reasons) if reasons else "Awaiting clearer confirmation"
+    holding_duration = (
+        f"{settings.holding_duration_days_min}-{settings.holding_duration_days_max} trading days"
+    )
 
     return SignalDecision(
         signal=signal,
@@ -84,7 +87,7 @@ def generate_signal(
         target1=risk.target1,
         target2=risk.target2,
         rr_ratio=round(risk.rr_ratio, 2),
-        holding_duration="5-20 trading days",
+        holding_duration=holding_duration,
         reasoning=reasoning,
         sentiment_summary=sentiment.summary,
         generated_at=datetime.now(timezone.utc),
