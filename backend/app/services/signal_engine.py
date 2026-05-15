@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.config import settings
 from app.services.indicators import IndicatorBundle
@@ -87,5 +87,5 @@ def generate_signal(
         holding_duration="5-20 trading days",
         reasoning=reasoning,
         sentiment_summary=sentiment.summary,
-        generated_at=datetime.utcnow(),
+        generated_at=datetime.now(timezone.utc),
     )

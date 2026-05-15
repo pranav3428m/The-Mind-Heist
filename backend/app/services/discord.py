@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 
@@ -28,7 +28,7 @@ def format_discord_message(signal: SignalResponse, timeframe: str) -> str:
         f"{signal.reasoning}\n\n"
         f"Timeframe: {timeframe}\n\n"
         "Generated At:\n"
-        f"{datetime.utcnow().isoformat()}\n"
+        f"{datetime.now(timezone.utc).isoformat()}\n"
         "------------------------------------------------"
     )
 

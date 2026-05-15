@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, WebSocket
 
@@ -33,7 +33,7 @@ async def create_signal(payload: SignalRequest) -> SignalResponse:
             holding_duration="N/A",
             reasoning="Insufficient data for signal",
             sentiment_summary="No data",
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
         )
 
     indicators = compute_indicators(candles)

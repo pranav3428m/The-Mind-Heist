@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -27,7 +27,7 @@ class MarketDataService:
             symbol=symbol,
             last_price=float(data.get("last_price", 0.0)),
             day_change_pct=float(data.get("day_change_pct", 0.0)),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
 
     async def get_candles(self, symbol: str, timeframe: str) -> pd.DataFrame:
