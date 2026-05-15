@@ -15,8 +15,8 @@ class MarketHours:
 NSE_HOURS = MarketHours(open_time=time(9, 15), close_time=time(15, 30))
 
 
-def is_market_open(timestamp: datetime, timezone: str = "Asia/Kolkata") -> bool:
-    tz = pytz.timezone(timezone)
+def is_market_open(timestamp: datetime, tz_name: str = "Asia/Kolkata") -> bool:
+    tz = pytz.timezone(tz_name)
     localized = timestamp.astimezone(tz)
     if localized.weekday() >= 5:
         return False

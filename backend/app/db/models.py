@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -132,8 +132,8 @@ class BacktestRun(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     strategy: Mapped[str] = mapped_column(String(128))
-    start_date: Mapped[Date] = mapped_column(Date)
-    end_date: Mapped[Date] = mapped_column(Date)
+    start_date: Mapped[date] = mapped_column(Date)
+    end_date: Mapped[date] = mapped_column(Date)
     parameters: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     results: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))

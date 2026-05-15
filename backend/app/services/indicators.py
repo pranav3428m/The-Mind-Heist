@@ -53,6 +53,8 @@ def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
     if talib:
         rsi = talib.RSI(close, timeperiod=14)[-1]
         macd, macd_signal, _ = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+        macd_value = macd[-1]
+        macd_signal_value = macd_signal[-1]
         ema_20 = talib.EMA(close, timeperiod=20)[-1]
         ema_50 = talib.EMA(close, timeperiod=50)[-1]
         ema_200 = talib.EMA(close, timeperiod=200)[-1]
@@ -64,8 +66,8 @@ def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
         candle_pattern = _detect_candlestick(talib, candles)
     else:
         rsi = _fallback_rsi(close)
-        macd = close.ewm(span=12).mean().iloc[-1] - close.ewm(span=26).mean().iloc[-1]
-        macd_signal = pd.Series([macd]).ewm(span=9).mean().iloc[-1]
+        macd_value = close.ewm(span=12).mean().iloc[-1] - close.ewm(span=26).mean().iloc[-1]
+        macd_signal_value = pd.Series([macd_value]).ewm(span=9).mean().iloc[-1]
         ema_20 = close.ewm(span=20).mean().iloc[-1]
         ema_50 = close.ewm(span=50).mean().iloc[-1]
         ema_200 = close.ewm(span=200).mean().iloc[-1]
@@ -93,8 +95,8 @@ def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
 
     return IndicatorBundle(
         rsi=float(rsi),
-        macd=float(macd),
-        macd_signal=float(macd_signal),
+        macd=float(macd_value),
+        macd_signal=float(macd_signal_value),
         ema_20=float(ema_20),
         ema_50=float(ema_50),
         ema_200=float(ema_200),
