@@ -22,8 +22,7 @@ class SignalModel:
     def train(self, features: np.ndarray, targets: np.ndarray) -> None:
         y_true = (targets > 0).astype(int)
         self.model.fit(features, y_true)
-        predictions = self.model.predict(features)
-        y_pred = predictions.astype(int)
+        y_pred = self.model.predict(features).astype(int)
         if len(np.unique(y_true)) < 2:
             self.metrics = ModelMetrics(accuracy=0.0, precision=0.0, recall=0.0)
             return

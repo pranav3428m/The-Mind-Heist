@@ -5,6 +5,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+EPSILON = 1e-6
+
 try:
     import talib
 except ImportError:  # pragma: no cover - runtime dependency
@@ -34,14 +36,6 @@ class IndicatorBundle:
     support: float
     resistance: float
     candle_pattern: str | None
-
-
-def _fallback_rsi(series: pd.Series, period: int = 14) -> float:
-    delta = series.diff()
-    gain = delta.clip(lower=0).rolling(period).mean()
-    loss = -delta.clip(upper=0).rolling(period).mean()
-    rs = gain / loss.replace(0, np.nan)
-    return (100 - (100 / (1 + rs))).iloc[-1]
 
 
 def _rsi_series(series: pd.Series, period: int = 14) -> pd.Series:
@@ -91,7 +85,7 @@ def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
         atr = (high - low).rolling(14).mean().iloc[-1]
         rsi_min = rsi_series.rolling(14).min().iloc[-1]
         rsi_max = rsi_series.rolling(14).max().iloc[-1]
-        stoch_rsi = ((rsi - rsi_min) / max(rsi_max - rsi_min, 1e-6)) * 100
+        stoch_rsi = ((rsi - rsi_min) / max(rsi_max - rsi_min, EPSILON)) * 100
         obv = (np.sign(close.diff().fillna(0)) * volume).cumsum().iloc[-1]
         adx = 20.0
         candle_pattern = None

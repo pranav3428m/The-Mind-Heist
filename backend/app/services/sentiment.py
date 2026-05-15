@@ -10,23 +10,25 @@ class SentimentSnapshot:
     summary: str
 
 
+WEIGHTS = {
+    "news": 0.35,
+    "social": 0.25,
+    "fear_greed": 0.2,
+    "sector": 0.2,
+}
+
+
 def aggregate_sentiment(
     news_score: float,
     social_score: float,
     fear_greed: float,
     sector_rotation: float,
 ) -> SentimentSnapshot:
-    weights = {
-        "news": 0.35,
-        "social": 0.25,
-        "fear_greed": 0.2,
-        "sector": 0.2,
-    }
     combined = (
-        news_score * weights["news"]
-        + social_score * weights["social"]
-        + fear_greed * weights["fear_greed"]
-        + sector_rotation * weights["sector"]
+        news_score * WEIGHTS["news"]
+        + social_score * WEIGHTS["social"]
+        + fear_greed * WEIGHTS["fear_greed"]
+        + sector_rotation * WEIGHTS["sector"]
     )
     confidence = min(1.0, 0.4 + abs(combined) * 0.6)
     sentiment_label = "positive" if combined > 0.1 else "negative" if combined < -0.1 else "neutral"
