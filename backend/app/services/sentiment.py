@@ -16,6 +16,9 @@ WEIGHTS = {
     "fear_greed": 0.2,
     "sector": 0.2,
 }
+TOTAL_WEIGHT = sum(WEIGHTS.values())
+if abs(TOTAL_WEIGHT - 1.0) > 1e-6:
+    raise ValueError("Sentiment weights must sum to 1.0")
 
 
 def aggregate_sentiment(

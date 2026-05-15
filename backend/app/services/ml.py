@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -18,6 +19,7 @@ class SignalModel:
     def __init__(self) -> None:
         self.model = RandomForestClassifier(n_estimators=200, random_state=42)
         self.metrics = ModelMetrics(accuracy=0.0, precision=0.0, recall=0.0)
+        self.logger = logging.getLogger(__name__)
 
     def train(self, features: np.ndarray, targets: np.ndarray) -> None:
         y_true = (targets > 0).astype(int)
@@ -25,6 +27,7 @@ class SignalModel:
         y_pred = self.model.predict(features).astype(int)
         if len(np.unique(y_true)) < 2:
             self.metrics = ModelMetrics(accuracy=0.0, precision=0.0, recall=0.0)
+            self.logger.warning("Insufficient class diversity for metrics computation")
             return
         self.metrics = ModelMetrics(
             accuracy=float(accuracy_score(y_true, y_pred)),

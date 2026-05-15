@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class HdfcClient:
     def __init__(self) -> None:
         if not settings.hdfc_api_key or not settings.hdfc_api_secret:
-            logger.warning("HDFC credentials are not configured")
+            raise RuntimeError("HDFC credentials are not configured")
         self.base_url = settings.hdfc_base_url
         self.headers = {
             "X-API-KEY": settings.hdfc_api_key or "",

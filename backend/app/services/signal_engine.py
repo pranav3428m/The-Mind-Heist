@@ -24,6 +24,12 @@ class SignalDecision:
     generated_at: datetime
 
 
+# Weighting tuned for swing-trade confirmations: base signal + indicator stack + sentiment tilt.
+BASE_CONFIDENCE = 0.15
+BULLISH_WEIGHT = 0.12
+SENTIMENT_WEIGHT = 0.4
+
+
 def generate_signal(
     symbol: str,
     stock_name: str,
@@ -56,7 +62,10 @@ def generate_signal(
 
     risk = calculate_risk(last_price, indicators.atr, sentiment.confidence)
 
-    confidence = min(1.0, 0.15 + bullish_signals * 0.12 + sentiment.score * 0.4)
+    confidence = min(
+        1.0,
+        BASE_CONFIDENCE + bullish_signals * BULLISH_WEIGHT + sentiment.score * SENTIMENT_WEIGHT,
+    )
     confidence = max(0.0, confidence)
     rr_ok = risk.rr_ratio >= 1.8
     sentiment_ok = sentiment.score > 0.05

@@ -50,6 +50,25 @@ def _last_value(value) -> float:
     return float(value[-1]) if hasattr(value, "__iter__") else float(value)
 
 
+def _adx_fallback(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> float:
+    up_move = high.diff()
+    down_move = low.shift(1) - low
+    plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+    minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+
+    tr_components = pd.concat(
+        [(high - low), (high - close.shift(1)).abs(), (low - close.shift(1)).abs()],
+        axis=1,
+    )
+    true_range = tr_components.max(axis=1)
+    atr = true_range.rolling(period).mean()
+
+    plus_di = 100 * pd.Series(plus_dm).rolling(period).sum() / atr
+    minus_di = 100 * pd.Series(minus_dm).rolling(period).sum() / atr
+    dx = (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan) * 100
+    adx = dx.rolling(period).mean().iloc[-1]
+    return float(adx) if not np.isnan(adx) else 0.0
+
 def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
     close = candles["close"]
     high = candles["high"]
@@ -85,9 +104,14 @@ def compute_indicators(candles: pd.DataFrame) -> IndicatorBundle:
         atr = (high - low).rolling(14).mean().iloc[-1]
         rsi_min = rsi_series.rolling(14).min().iloc[-1]
         rsi_max = rsi_series.rolling(14).max().iloc[-1]
-        stoch_rsi = ((rsi - rsi_min) / max(rsi_max - rsi_min, EPSILON)) * 100
+        denominator = max(rsi_max - rsi_min, EPSILON)
+        if denominator <= EPSILON:
+            stoch_rsi = 50.0
+        else:
+            stoch_rsi = ((rsi - rsi_min) / denominator) * 100
+        stoch_rsi = float(np.clip(stoch_rsi, 0, 100))
         obv = (np.sign(close.diff().fillna(0)) * volume).cumsum().iloc[-1]
-        adx = 20.0
+        adx = _adx_fallback(high, low, close)
         candle_pattern = None
 
     vwap = (close * volume).sum() / volume.sum()
