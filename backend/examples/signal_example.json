@@ -1,0 +1,15 @@
+{
+  "stock_name": "Reliance Industries",
+  "ticker": "RELIANCE",
+  "signal": "BUY",
+  "confidence": 0.81,
+  "entry_price": 2875.5,
+  "stop_loss": 2760.0,
+  "target1": 3010.0,
+  "target2": 3155.0,
+  "rr_ratio": 2.1,
+  "holding_duration": "5-20 trading days",
+  "reasoning": "EMA stack supports uptrend; MACD bullish crossover; RSI indicates oversold momentum; Volume confirms accumulation",
+  "sentiment_summary": "News sentiment 0.12, social sentiment 0.08, fear/greed 0.05, sector rotation 0.03. Overall tone is positive.",
+  "generated_at": "2026-05-15T14:25:00Z"
+}

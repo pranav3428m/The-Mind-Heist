@@ -2,6 +2,8 @@
 
 A cyberpunk arcade puzzle game where you navigate through a human brain, steal memories, avoid immune defenses, and solve neural puzzles using hacking abilities.
 
+This repository also includes a production-ready **AI stock signal backend** in `backend/` (FastAPI + Postgres + Redis + Discord alerts).
+
 ---
 
 ## Features
@@ -76,6 +78,13 @@ mind-heist/
 ├── main.py                      # Main game loop & state machine
 ├── requirements.txt             # Dependencies
 ├── README.md                    # This file
+│
+├── backend/                     # AI stock signal backend (FastAPI)
+│   ├── app/                      # API + services
+│   ├── docker-compose.yml        # Postgres + Redis + API
+│   ├── Dockerfile                # Backend container
+│   ├── requirements.txt          # Backend dependencies
+│   └── README.md                 # Backend docs
 │
 ├── game/
 │   ├── __init__.py
